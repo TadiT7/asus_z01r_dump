@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+
+    @Author: ASUS Rad Yeh
+    @Data: 20170310
+
+    This VoiceMail file is a augmented file with operator VoiceMail number.
+    This is for some operators which has no VoiceMail number in sim card.
+
+    This file will be locate at /system/etc/
+
+       Format is listed as below:
+       <voicemail
+           numeric="MCC+MNC"
+           carrier="Operator Name"
+           vmnumber="Voicemail Number"
+           vmtag="Tag for Voicemail" />
+
+-->
+
+<voicemail>
+    <voicemail
+        numeric="72408"
+        carrier="TIM"
+        vmnumber="*100"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72404"
+        carrier="TIM"
+        vmnumber="*100"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72403"
+        carrier="TIM"
+        vmnumber="*100"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72402"
+        carrier="TIM"
+        vmnumber="*100"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72412"
+        carrier="Claro"
+        vmnumber="*100"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72438"
+        carrier="Claro"
+        vmnumber="*100"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72405"
+        carrier="Claro"
+        vmnumber="*100"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72430"
+        carrier="Oi"
+        vmnumber="*100"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72431"
+        carrier="Oi"
+        vmnumber="*100"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72439"
+        carrier="Nextel"
+        vmnumber="*100"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72400"
+        carrier="Nextel"
+        vmnumber="*100"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72401"
+        carrier="Vivo"
+        vmnumber="*555"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72419"
+        carrier="Vivo"
+        vmnumber="*555"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72423"
+        carrier="Vivo"
+        vmnumber="*555"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72411"
+        carrier="Vivo"
+        vmnumber="*555"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72410"
+        carrier="Vivo"
+        vmnumber="*555"
+        vmtag="Voicemail" />
+    <voicemail
+        numeric="72406"
+        carrier="Vivo"
+        vmnumber="*555"
+        vmtag="Voicemail" />
+</voicemail>

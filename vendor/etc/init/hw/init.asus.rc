@@ -1,0 +1,439 @@
+#This is init.asus.rc for user build.
+
+#import /vendor/etc/init/hw/init.asus.debugtool.rc
+#import /vendor/etc/init/hw/init.asus.logtool.rc
+
+on early-init
+	exec u:r:vendor_modprobe:s0 -- /vendor/bin/modprobe -a -d /vendor/lib/modules focaltech_ft8716f
+    exec u:r:vendor_modprobe:s0 -- /vendor/bin/modprobe -a -d /vendor/lib/modules gf_spi
+    exec u:r:vendor_modprobe:s0 -- /vendor/bin/modprobe -a -d /vendor/lib/modules snd-soc-tfa9874
+#    start customize_early
+
+#on init
+#    start customize_early
+
+# ASUS BSP++++ Set ro.deviceid for FOTA apk check IMEI1 is stored or not in server
+on property:persist.radio.device.imei=*
+    setprop ro.deviceid ${persist.radio.device.imei}
+# ASUS BSP++
+
+on post-fs-data
+# Permissions for Sensors
+    chown system system /dev/cm3602
+    chmod 0660 /dev/cm3602
+
+    chown system system /dev/proximitySensor
+    chmod 0660 /dev/proximitySensor
+
+    chown system system /dev/lightsensor
+    chmod 0660 /dev/lightsensor
+
+    chown system system /dev/asusRgbSensor
+    chmod 0660 /dev/asusRgbSensor
+
+    chown system system /sys/class/i2c-adapter/i2c-6/6-001c/mode
+    chmod 0774 /sys/class/i2c-adapter/i2c-6/6-001c/mode
+
+    chown system system /sys/class/timed_output/vibrator/vmax
+    chown system system /sys/class/capella_sensors/lightsensor/ls_rgbratio
+
+    #WAPI
+    mkdir /data/misc/wapi_certificate 0770 system wifi
+#+++BSP_ASUS keybox
+    mkdir /persist/data/app_g 0700 system system
+#---BSP_ASUS keybox
+# ASUS_BSP +++ ultrabatterylife mode
+    mkdir /persist/charger 0777 system system
+    chmod 0777 /persist/charger/CHGLimit
+# ASUS_BSP +++ ultrabatterylife mode
+# Permissions for Sensors
+
+	chmod 0777 /sys/class/graphics/fb0/hdr_mode
+
+
+# DTS_EAGLE START
+mkdir /data/misc/dts 0771 media camera
+chmod 775 /data/misc/dts
+
+#add for aw
+mkdir /data/misc/aw 0777 audio audio
+write /data/misc/aw/route_path.info 0
+restorecon_recursive /data/misc/aw/route_path.info
+chmod 777 /data/misc/aw/route_path.info
+write  /data/misc/dts/playbackstatus.info 2
+chmod 777 data/misc/dts/playbackstatus.info
+#add for aw
+
+#add for calibration
+mkdir /data/misc/amp 0777 audio audio
+touch /data/misc/amp/tfa98xx-sysfs.lck
+chmod 0666 /data/misc/amp/tfa98xx-sysfs.lck
+write /data/misc/amp/cal_self_speaker0_data_tmp.txt 0
+write /data/misc/amp/cal_self_receiver0_data_tmp.txt 0
+write /data/misc/amp/cal_mtpex_data_tmp.txt 0
+restorecon_recursive /data/misc/amp/cal_self_speaker0_data_tmp.txt
+restorecon_recursive /data/misc/amp/cal_self_receiver0_data_tmp.txt
+restorecon_recursive /data/misc/amp/cal_mtpex_data_tmp.txt
+chmod 777 /data/misc/amp/cal_self_speaker0_data_tmp.txt
+chmod 777 /data/misc/amp/cal_self_receiver0_data_tmp.txt
+chmod 777 /data/misc/amp/cal_mtpex_data_tmp.txt
+chmod 777 /system/vendor/bin/amp_calibration.sh
+chown root root /data/misc/amp/tfa98xx-sysfs.lck
+chmod 0755 /sys/bus/i2c/devices/i2c-2/2-0034/reg
+chmod 0755 /sys/bus/i2c/devices/i2c-2/2-0034/rw
+chmod 0755 /sys/bus/i2c/devices/i2c-2/2-0035/reg
+chmod 0755 /sys/bus/i2c/devices/i2c-2/2-0035/rw
+#chown system system /dev/i2c-2
+#chmod 0755 /dev/i2c-2
+#add for calibration
+
+setprop ro.dts.licensepath "/vendor/etc/dts/"
+
+# DTS HPX service
+service dts_hpx_service /vendor/bin/dts_hpx_service
+    class late_start
+    user system
+    group audio media camera
+# DTS_EAGLE END
+
+# for ASUS display HIT service
+on property:sys.splendid.refreshscreen=1
+    start refreshscreen
+
+service refreshscreen /vendor/bin/ScreenRefresh
+    user root
+    group root
+    disabled
+    oneshot
+    seclabel u:r:asus_display_splendid:s0
+
+# for ASUS speaker&receiver calibration service
+on property:persist.asus.audiocalibration=1
+    start calibration
+
+service calibration /system/vendor/bin/sh /system/vendor/bin/amp_calibration.sh
+    class late_start
+    disabled
+    oneshot
+    seclabel u:r:amp_calibration:s0
+
+# bugreport is triggered by holding down volume down, volume up and power
+service bugreport /system/bin/dumpstate -d -p -B -z \
+        -o /data/user_de/0/com.android.shell/files/bugreports/bugreport
+    class main
+    disabled
+    oneshot
+#   keycodes 114 115 116
+
+service VerifyVoucher  /vendor/bin/VerifyVouchers
+	user root
+	group root
+	oneshot
+
+on property:sys.boot_completed=1
+	start VerifyVoucher
+
+on load_persist_props_action
+    class_start pre-core
+
+on fs
+    chown system system /vendor/factory
+    chmod 0770 /vendor/factory
+    start customize_early
+
+# mount asdf
+    mount ext4 /dev/block/bootdevice/by-name/asdf /vendor/asdf nosuid noatime nodev barrier=1
+    chown root root /vendor/asdf
+    chmod 0775 /vendor/asdf
+
+# mount ADF
+    wait /dev/block/bootdevice/by-name/ADF
+    mount ext4 /dev/block/bootdevice/by-name/ADF /vendor/ADF rw noatime
+    chown system system /vendor/ADF
+    chmod 0775 /vendor/ADF
+    restorecon_recursive /vendor/ADF
+#Disable demoapp by default
+    setprop persist.sys.enableAPD 0
+
+on property:persist.sys.enableAPD=0
+#unmount APD
+	umount /vendor/APD
+    write /proc/driver/charger_limit_enable 0
+
+on property:persist.sys.enableAPD=1
+# mount APD
+	chmod 0775 /vendor/APD
+	wait /dev/block/bootdevice/by-name/APD
+	mount ext4 /dev/block/bootdevice/by-name/APD /vendor/APD nosuid noatime nodev barrier=1 data=ordered
+	chown system system /vendor/APD
+	restorecon_recursive /vendor/APD
+    write /proc/driver/charger_limit_enable 1
+    write /proc/driver/charging_limit 60
+# start customize early service
+#    start customize_early
+
+#demoapp charging limit for CN SKU
+on property:sys.asus.cndemo=0
+    write /proc/driver/charger_limit_enable 0
+    write /proc/driver/charging_limit 60
+
+on property:sys.asus.cndemo=1
+    write /proc/driver/charger_limit_enable 1
+    write /proc/driver/charging_limit 60
+    
+# for libunlock
+service asuskeyd /vendor/bin/asuskeyd
+    class main
+    user root
+    group root
+    disabled
+    oneshot
+on property:dev.unlock=0
+    stop asuskeyd
+on property:dev.unlock=1
+    start asuskeyd
+
+on boot
+#insmod asus kernel modules
+    insmod /vendor/lib/modules/PRJ_info.ko
+    insmod /vendor/lib/modules/texfat.ko
+    chown system system /sys/class/leds/red/pwm_us
+    chown system system /sys/class/leds/green/pwm_us
+    chown system system /sys/class/leds/blue/pwm_us
+    chown system system /sys/class/leds/vibrator/vmax_mv
+
+#ASUS_BSP tyree_liu Permission for Touch dclick Mode
+    chown system system /sys/bus/i2c/devices/3-0038/fts_dclick_mode
+#ASUS_BSP tyree_liu Permission for Touch swipeup Mode
+    chown system system /sys/bus/i2c/devices/3-0038/fts_swipe_mode
+#ASUS_BSP tyree_liu Permissions for Touch Gesture Mode
+    chown system system /sys/bus/i2c/devices/3-0038/fts_gesture_mode
+# Permissions for Touch glove Mode
+    chown system system /sys/bus/i2c/devices/3-0038/fts_glove_mode
+# Permissions for Touch Cover Mode
+    chown system system /sys/bus/i2c/devices/3-0038/fts_cover_mode
+
+    # ASUS_BSP +++ jeff_gu add timer to dump wakeup_sources
+    chown system system /sys/power/dump_wakeup_sources_timer
+    # ASUS_BSP --- jeff_gu add timer to dump wakeup_sources
+
+    # "GPU performance mode"
+    chown system system /sys/class/kgsl/kgsl-3d0/bus_split
+    chmod 0660 /sys/class/kgsl/kgsl-3d0/bus_split
+    chown system system /sys/class/kgsl/kgsl-3d0/devfreq/governor
+    chmod 0660 /sys/class/kgsl/kgsl-3d0/devfreq/governor
+    chown system system /sys/class/kgsl/kgsl-3d0/force_bus_on
+    chmod 0660 /sys/class/kgsl/kgsl-3d0/force_bus_on
+    chown system system /sys/class/kgsl/kgsl-3d0/force_rail_on
+    chmod 0660 /sys/class/kgsl/kgsl-3d0/force_rail_on
+    chown system system /sys/class/kgsl/kgsl-3d0/force_clk_on
+    chmod 0660 /sys/class/kgsl/kgsl-3d0/force_clk_on
+    chown system system /sys/class/kgsl/kgsl-3d0/idle_timer
+    chmod 0660 /sys/class/kgsl/kgsl-3d0/idle_timer
+
+    # "clkscale_enable"
+    chown system system /sys/class/scsi_host/host0/../../../clkscale_enable
+    chmod 0660 /sys/class/scsi_host/host0/../../../clkscale_enable
+
+service customize_early /vendor/bin/customize_early
+    user root
+    oneshot
+
+service customize_mount /vendor/bin/customize_mount
+    class pre-core
+    user root
+    oneshot
+
+# import customize service late
+service customize_late /vendor/bin/customize_late
+    user root
+    oneshot
+
+on property:sys.boot_completed=1
+    start customize_late
+    write /proc/boot_completed_prop 1
+
+on property:persist.sys.setupwizard.active=*
+    start customize_mount
+
+# ASUS BSP++++ "for check Country Code + Single/Dual SIM"
+service modem_country /vendor/bin/modem_country
+    class late_start
+    user bluetooth
+    group net_bt
+    disabled
+    oneshot
+
+on property:sys.boot_completed=1
+    start modem_country
+#ASUS BSP++
+
+
+# ASUS_BSP+++ "add more log to debug"
+on property:persist.asus.wifiDriverDebug=*
+    write /sys/bus/platform/devices/18800000.qcom,icnss/do_wifi_driver_debug ${persist.asus.wifiDriverDebug}
+# ASUS_BSP--- "add more log to debug"
+
+#hotspot_manage_users
+service hostapd_cmd /vendor/bin/hostapd_cmd
+    class main
+    group system wifi
+    user root
+    oneshot
+    disabled
+
+on property:persist.sys.wifi.hostapd.cmd=*
+    start hostapd_cmd
+
+# ASUS_BSP tyree_liu add for touch gesture mode +++
+on property:persist.asus.dclick=0
+    write /sys/bus/i2c/devices/3-0038/fts_dclick_mode 0
+
+on property:persist.asus.dclick=1
+    write /sys/bus/i2c/devices/3-0038/fts_dclick_mode 1
+
+on property:persist.asus.swipeup=0
+    write /sys/bus/i2c/devices/3-0038/fts_swipe_mode 0
+
+on property:persist.asus.swipeup=1
+    write /sys/bus/i2c/devices/3-0038/fts_swipe_mode 1
+
+on property:persist.asus.gesture.type=*
+    write /sys/bus/i2c/devices/3-0038/fts_gesture_buf ${persist.asus.gesture.type}
+
+on property:persist.asus.glove=0
+    write /sys/bus/i2c/devices/3-0038/fts_glove_mode 0
+
+on property:persist.asus.glove=1
+    write /sys/bus/i2c/devices/3-0038/fts_glove_mode 1
+
+on property:persist.asus.flipcovermode=0
+    write /sys/bus/i2c/devices/3-0038/fts_cover_mode 0
+
+on property:persist.asus.flipcovermode=1
+    write /sys/bus/i2c/devices/3-0038/fts_cover_mode 1
+# ASUS_BSP tyree_liu add for touch gesture mode ---
+
+#ASUS_BSP guochang thermal engine +++
+on property:sys.restart.thermal=1
+	stop thermal-engine
+	start thermal-engine
+
+service onFgAppChanged /vendor/bin/onFgAppChanged
+        class core
+        user root
+        oneshot
+        disabled
+		seclabel u:r:onFgAppChanged:s0
+
+on property:sys.ultimate.mode.enabled=*
+	start onFgAppChanged
+on property:sys.thermald.disabled=*
+        start onFgAppChanged
+
+on property:sys.foregroundapp=*
+	start onFgAppChanged
+#ASUS_BSP guochang thermal engine ---
+
+service asuskeybox /vendor/bin/is_keybox_valid
+        class core
+        user root
+        oneshot
+        disabled
+        seclabel u:r:asus_keybox:s0
+on property:sys.boot_completed=1
+	start asuskeybox
+
+#ASUS_BSP CHUNGYI Porting Camera Feature for AsusCamera +++++
+
+setprop ro.asus.camera.preview_beauty "0:1;1:1;2:1;3:0"
+setprop ro.asus.camera.video_beauty "0:1;1:1;2:1;3:0"
+setprop ro.asus.camera.preview_portrait "0:1;1:1;2:1;3:0"
+setprop ro.asus.camera.cam0.video_fps "HD@60,FHD@60,4K@60"
+setprop ro.asus.camera.cam1.video_fps "HD@30,FHD@30"
+setprop ro.asus.camera.cam2.video_fps "HD@30,FHD@30"
+setprop ro.asus.camera.cam3.video_fps "HD@30,FHD@30"
+setprop ro.asus.camera.dual_bokeh "0:0;1:0;2:0;3:1"
+setprop ro.asus.camera.lens_type "0:standard;1:standard;2:wide-angle;3:virtual"
+setprop ro.asus.camera.use_frame_processor "0"
+setprop ro.asus.camera.scene_mode "0:1;1:1;2:1;3:1"
+setprop ro.asus.camera.cam0.video_eis "invn"
+setprop ro.asus.camera.cam1.video_eis "invn"
+setprop ro.asus.camera.cam2.video_eis "invn"
+setprop ro.asus.camera.cam0.eis_invn.sup_list "4K@30,FHD@30,HD@30,TV@30"
+setprop ro.asus.camera.cam1.eis_invn.sup_list "FHD@30,HD@30,TV@30"
+setprop ro.asus.camera.cam2.eis_invn.sup_list "FHD@30,HD@30,TV@30"
+#ASUS_BSP CHUNGYI Porting Camera Feature for AsusCamera -----
+
+#ASUS_BSP AT Porting BeautyLive +++++
+setprop camera.beautylive.support_flip "1"
+#ASUS_BSP AT Porting BeautyLive -----
+
+#ASUS_IMS Porting Zenimoji +++
+setprop ro.asus.zenimoji.sdk.version "8.1.3.2.1"
+#ASUS_IMS Porting Zenimoji ---
+
+#ASUS_BSP bob_mode_switch +++
+setprop persist.asus.receiverEnable "0"
+setprop asus.sensor.proximity_status "-1"
+#ASUS_BSP bob_mode_switch ---
+
+#ASUS_BSP add for BR/IN adapter +++
+on property:ro.asus.br_countrycode=1
+    write /proc/br_countrycode_prop 1
+
+on property:ro.asus.br_countrycode=2
+    write /proc/br_countrycode_prop 2
+
+on charger
+    wait /dev/block/bootdevice/by-name/factory
+    mount ext4 /dev/block/bootdevice/by-name/factory /factory ro context=u:object_r:fac_file:s0
+    chown system system /vendor/factory
+    chmod 0770 /vendor/factory
+    start customize_early
+    wait /dev/block/bootdevice/by-name/persist
+    mount ext4 /dev/block/bootdevice/by-name/persist /persist nosuid noatime nodev barrier=1
+    mkdir /persist/charger 0777 system system
+    write /persist/charger/CHGLimit 0
+    chmod 0777 /persist/charger/CHGLimit
+#ASUS_BSP add for BR/IN adapter ---
+
+# ASUS_BSP +++ ultrabatterylife mode
+on property:persist.sys.ultrabatterylife=1
+    # ultra battery life mode disable
+    write /persist/charger/CHGLimit 0
+    write /persist/charger/CHGLimit_kernel 1
+
+on property:persist.sys.ultrabatterylife=0
+    # ultra battery life mode disable
+    write /persist/charger/CHGLimit_kernel 0
+# ASUS_BSP --- ultrabatterylife mode
+
+# ASUS_BSP +++ smartcharging control
+on property:persist.sys.stopcharging=1
+    write /proc/driver/smartchg_stop_chg 1
+
+on property:persist.sys.stopcharging=0
+    write /proc/driver/smartchg_stop_chg 0
+# ASUS_BSP --- smartcharging control
+
+#ASUS_BSP PeterYeh: add for push media files +++
+on property:persist.sys.setupwizard.active=true
+	start push_media_file
+
+service push_media_file /vendor/bin/sh /vendor/bin/push_media_file.sh
+	class late_start
+	user root
+    group sdcard_rw
+    oneshot
+    disabled
+#ASUS_BSP PeterYeh: add for push media files ---
+
+# ASUS_BSP +++ bob_mode_switch
+# persist.asus.receiverEnable: 0 - only receiver on, 1 - receiver off
+on property:persist.asus.receiverEnable=1
+    write /proc/bob_mode_switch 1
+
+on property:persist.asus.receiverEnable=0
+    write /proc/bob_mode_switch 0
+# ASUS_BSP --- bob_mode_switch
